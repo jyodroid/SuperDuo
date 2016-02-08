@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -16,6 +17,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
+
+import com.google.android.gms.vision.barcode.Barcode;
+import com.google.android.gms.vision.barcode.BarcodeDetector;
 
 import it.jaschke.alexandria.api.Callback;
 
@@ -37,9 +41,14 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
     public static final String MESSAGE_EVENT = "MESSAGE_EVENT";
     public static final String MESSAGE_KEY = "MESSAGE_EXTRA";
 
+    private boolean hasCamera = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        hasCamera = checkCameraHardware(this);
+
         IS_TABLET = isTablet();
         if(IS_TABLET){
             setContentView(R.layout.activity_main_tablet);
@@ -73,6 +82,9 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
                 break;
             case 1:
                 nextFragment = new AddBook();
+                Bundle arguments = new Bundle();
+                arguments.putBoolean(AddBook.HAS_CAMERA, hasCamera);
+                nextFragment.setArguments(arguments);
                 break;
             case 2:
                 nextFragment = new About();
@@ -176,6 +188,17 @@ public class MainActivity extends ActionBarActivity implements NavigationDrawerF
             finish();
         }
         super.onBackPressed();
+    }
+
+    /** Check if this device has a camera */
+    private boolean checkCameraHardware(Context context) {
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
+            // this device has a camera
+            return true;
+        } else {
+            // no camera on this device
+            return false;
+        }
     }
 
 
