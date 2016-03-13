@@ -4,16 +4,15 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.util.Patterns;
-import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,32 +22,30 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
-import com.google.android.gms.vision.Frame;
+import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.vision.barcode.Barcode;
-import com.google.android.gms.vision.barcode.BarcodeDetector;
 
 import android.hardware.Camera;
 
-import it.jaschke.alexandria.CameraPreview.CameraPreview;
+import it.jaschke.alexandria.barcode.BarcodeCaptureActivity;
+import it.jaschke.alexandria.commons.InternetUtils;
 import it.jaschke.alexandria.data.AlexandriaContract;
 import it.jaschke.alexandria.services.BookService;
 import it.jaschke.alexandria.services.DownloadImage;
 
 
 public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
-    private static final String TAG = "INTENT_TO_SCAN_ACTIVITY";
+    private static final String TAG = AddBook.class.getSimpleName();
+    private static final int RC_BARCODE_CAPTURE = 9001;
     public static final String HAS_CAMERA = "HAS_CAMERA";
     private EditText ean;
     private final int LOADER_ID = 1;
     private View rootView;
     private final String EAN_CONTENT = "eanContent";
-    private static final String SCAN_FORMAT = "scanFormat";
-    private static final String SCAN_CONTENTS = "scanContents";
 
-    private String mScanFormat = "Format:";
-    private String mScanContents = "Contents:";
+    private String mCodeReadStatus;
+
     private boolean hasCamera = false;
-    private CameraPreview mPreview;
 
     private Camera mCamera;
 
@@ -114,91 +111,19 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                 // are using an external app.
                 //when you're done, remove the toast below.
 
-                //for test purpose, this is the readed RC
-                ImageView myImageView = (ImageView) getActivity().findViewById(R.id.bookCover);
-                myImageView.setImageResource(R.drawable.puppy);
-
                 //check for camera hardware
                 if (!hasCamera) {
                     Toast.makeText(
                             context,
                             "camera no detected!", Toast.LENGTH_LONG);
                 } else {
-                    //Use of camera preview
-                    mCamera = getCameraInstance();
-                    android.hardware.Camera.PreviewCallback previewCb = new android.hardware.Camera.PreviewCallback() {
-                        @Override
-                        public void onPreviewFrame(byte[] data, android.hardware.Camera camera) {
+                    Intent intent = new Intent(getActivity(), BarcodeCaptureActivity.class);
+                    intent.putExtra(BarcodeCaptureActivity.AutoFocus, true);
+                    intent.putExtra(BarcodeCaptureActivity.UseFlash, true);
 
-                        }
-                    };
+                    startActivityForResult(intent, RC_BARCODE_CAPTURE);
 
-                    android.hardware.Camera.AutoFocusCallback autoFocusCb =
-                            new android.hardware.Camera.AutoFocusCallback() {
-                                @Override
-                                public void onAutoFocus(boolean success, android.hardware.Camera camera) {
-
-                                }
-                            };
-
-                    getActivity().setContentView(
-                            new CameraPreview(context, mCamera, previewCb, autoFocusCb));
-                    mPreview = new CameraPreview(getActivity(), mCamera, previewCb, autoFocusCb);
-
-                    //Setup barcode detector
-                    try {
-                        BarcodeDetector detector =
-                                new BarcodeDetector.Builder(getActivity().getApplicationContext())
-                                        .setBarcodeFormats(Barcode.DATA_MATRIX | Barcode.QR_CODE | Barcode.ISBN)
-                                        .build();
-                        if (!detector.isOperational()) {
-                            Toast.makeText(
-                                    getActivity(),
-                                    "Could not set up the detector!", Toast.LENGTH_LONG);
-                            return;
-                        } else {
-//                    creates a frame from the bitmap, and passes it to the detector.
-//                    This returns a SparseArray of barcodes.
-                            //Obtain resource
-                            Bitmap myBitmap =
-                                    BitmapFactory.decodeResource(
-                                            getActivity().getApplicationContext().getResources(),
-                                            R.drawable.puppy);
-
-                            //Put resource in a frame the in a SparseArray
-                            // (could contain multiple barcodes)
-                            Frame frame = new Frame.Builder().setBitmap(myBitmap).build();
-//                            Frame frame = new Frame.Builder().setBitmap(mPreview.getDrawingCache()).build();
-                            SparseArray<Barcode> barcodes = detector.detect(frame);
-
-                            //decode the barcode
-                            //check if barcode is unique or there are more than one
-                            if (barcodes.size() == 0) {
-                                Toast.makeText(
-                                        getActivity(),
-                                        "No barcode detected!", Toast.LENGTH_LONG);
-                            } else if (barcodes.size() > 1) {
-                                Toast.makeText(
-                                        getActivity(),
-                                        "There are more that one barcode!", Toast.LENGTH_LONG);
-                            } else {
-                                Barcode thisCode = barcodes.valueAt(0);
-                                TextView txtView = (TextView) getActivity().findViewById(R.id.categories);
-                                txtView.setText(thisCode.rawValue);
-                            }
-                        }
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
                 }
-
-                CharSequence text = "This button should let you scan a book for its barcode!";
-                int duration = Toast.LENGTH_SHORT;
-
-                Toast toast = Toast.makeText(context, text, duration);
-                toast.show();
-
             }
         });
 
@@ -253,7 +178,14 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
     @Override
     public void onLoadFinished(android.support.v4.content.Loader<Cursor> loader, Cursor data) {
+
+        //Empty cursor
         if (!data.moveToFirst()) {
+//            if (InternetUtils.isInternetAvailable(getActivity())) {
+//                Toast.makeText(getActivity(), "No internet connection available",
+//                        Toast.LENGTH_LONG)
+//                        .show();
+//            }
             return;
         }
 
@@ -267,10 +199,17 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         String[] authorsArr = authors.split(",");
         ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
         ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
-        String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
-        if (Patterns.WEB_URL.matcher(imgUrl).matches()) {
-            new DownloadImage((ImageView) rootView.findViewById(R.id.bookCover)).execute(imgUrl);
-            rootView.findViewById(R.id.bookCover).setVisibility(View.VISIBLE);
+
+        if (InternetUtils.isInternetAvailable(getActivity())) {
+            String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
+            if (Patterns.WEB_URL.matcher(imgUrl).matches()) {
+                new DownloadImage((ImageView) rootView.findViewById(R.id.bookCover)).execute(imgUrl);
+                rootView.findViewById(R.id.bookCover).setVisibility(View.VISIBLE);
+            }
+        }else{
+            Toast.makeText(getActivity(), getActivity().getString(R.string.image_unavailable),
+                    Toast.LENGTH_LONG)
+                    .show();
         }
 
         String categories = data.getString(data.getColumnIndex(AlexandriaContract.CategoryEntry.CATEGORY));
@@ -301,12 +240,15 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         activity.setTitle(R.string.scan);
     }
 
-    public static Camera getCameraInstance() {
+    public static Camera getCameraInstance(Context context) {
         Camera camera = null;
         try {
             camera = Camera.open(); // attempt to get a Camera instance
         } catch (Exception e) {
             // Camera is not available (in use or does not exist)
+            Toast.makeText(
+                    context,
+                    "Camera is busy or not available!", Toast.LENGTH_LONG);
         }
         return camera; // returns null if camera is unavailable
     }
@@ -317,10 +259,56 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         releaseCamera();
     }
 
-    private void releaseCamera(){
-        if (mCamera != null){
+    private void releaseCamera() {
+        if (mCamera != null) {
             mCamera.release();        // release the camera for other applications
             mCamera = null;
+        }
+    }
+
+    /**
+     * Called when an activity you launched exits, giving you the requestCode
+     * you started it with, the resultCode it returned, and any additional
+     * data from it.  The <var>resultCode</var> will be
+     * RESULT_CANCELED if the activity explicitly returned that,
+     * didn't return any result, or crashed during its operation.
+     * <p/>
+     * <p>You will receive this call immediately before onResume() when your
+     * activity is re-starting.
+     * <p/>
+     *
+     * @param requestCode The integer request code originally supplied to
+     *                    startActivityForResult(), allowing you to identify who this
+     *                    result came from.
+     * @param resultCode  The integer result code returned by the child activity
+     *                    through its setResult().
+     * @param data        An Intent, which can return result data to the caller
+     *                    (various data can be attached to Intent "extras").
+     * @see #startActivityForResult
+     */
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == RC_BARCODE_CAPTURE) {
+            if (resultCode == CommonStatusCodes.SUCCESS) {
+                if (data != null) {
+                    Barcode barcode = data.getParcelableExtra(BarcodeCaptureActivity.BarcodeObject);
+                    mCodeReadStatus = getActivity().getString(R.string.barcode_success);
+                    ean.setText(barcode.displayValue);
+                    Log.d(TAG, "Barcode read: " + barcode.displayValue);
+                } else {
+                    mCodeReadStatus = getActivity().getString(R.string.barcode_failure);
+                    Log.d(TAG, "No barcode captured");
+                }
+            } else {
+                mCodeReadStatus = String.format(getActivity().getString(R.string.barcode_error),
+                        CommonStatusCodes.getStatusCodeString(resultCode));
+            }
+
+            Snackbar.make(getView(), mCodeReadStatus,
+                    Snackbar.LENGTH_LONG)
+                    .show();
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
         }
     }
 }

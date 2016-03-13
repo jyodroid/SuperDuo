@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/topLayout"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true"
+    android:background="@android:color/black"
+    android:weightSum="1">
+
+    <it.jaschke.alexandria.ui.camera.CameraSourcePreview
+        android:id="@+id/preview"
+        android:layout_width="match_parent"
+        android:layout_height="493dp"
+        android:layout_gravity="center">
+
+        <it.jaschke.alexandria.ui.camera.GraphicOverlay
+            android:id="@+id/graphicOverlay"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:foregroundGravity="center" />
+    </it.jaschke.alexandria.ui.camera.CameraSourcePreview>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:gravity="center"
+        android:text="Tap to capture. Pinch/Stretch to zoom"/>
+
+</LinearLayout>
