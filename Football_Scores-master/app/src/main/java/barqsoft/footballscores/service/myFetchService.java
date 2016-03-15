@@ -50,7 +50,7 @@ public class myFetchService extends IntentService
         //Creating fetch URL
         final String BASE_URL = "http://api.football-data.org/alpha/fixtures"; //Base URL
         final String QUERY_TIME_FRAME = "timeFrame"; //Time Frame parameter to determine days
-        //final String QUERY_MATCH_DAY = "matchday";
+//        final String QUERY_MATCH_DAY = "matchday";
 
         Uri fetch_build = Uri.parse(BASE_URL).buildUpon().
                 appendQueryParameter(QUERY_TIME_FRAME, timeFrame).build();
@@ -178,7 +178,6 @@ public class myFetchService extends IntentService
         try {
             JSONArray matches = new JSONObject(JSONdata).getJSONArray(FIXTURES);
 
-
             //ContentValues to be inserted
             Vector<ContentValues> values = new Vector <ContentValues> (matches.length());
             for(int i = 0;i < matches.length();i++)
@@ -228,7 +227,7 @@ public class myFetchService extends IntentService
                     }
                     catch (Exception e)
                     {
-                        Log.d(LOG_TAG, "error here!");
+                        Log.d(LOG_TAG, "error here! ");
                         Log.e(LOG_TAG,e.getMessage());
                     }
                     Home = match_data.getString(HOME_TEAM);
@@ -271,7 +270,6 @@ public class myFetchService extends IntentService
         {
             Log.e(LOG_TAG,e.getMessage());
         }
-
     }
 }
 

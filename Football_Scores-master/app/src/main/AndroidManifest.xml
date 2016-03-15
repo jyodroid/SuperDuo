@@ -33,6 +33,21 @@
                 android:value="barqsoft.footballscores.MainActivity" />
         </activity>
         <service android:name=".service.myFetchService" />
+        <!-- Widget -->
+        <receiver
+            android:name=".widget.NextMatchWidgetProvider"
+            android:label="@string/widget_text">
+
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+                <action android:name="barqsoft.footballscores.ACTION_DATA_UPDATED"/>
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_next_match"/>
+        </receiver>
+        <service android:name=".widget.NextMatchIntentService" />
     </application>
 
 </manifest>
