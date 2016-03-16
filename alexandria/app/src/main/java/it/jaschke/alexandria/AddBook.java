@@ -181,11 +181,6 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
         //Empty cursor
         if (!data.moveToFirst()) {
-//            if (InternetUtils.isInternetAvailable(getActivity())) {
-//                Toast.makeText(getActivity(), "No internet connection available",
-//                        Toast.LENGTH_LONG)
-//                        .show();
-//            }
             return;
         }
 
@@ -196,9 +191,12 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         ((TextView) rootView.findViewById(R.id.bookSubTitle)).setText(bookSubTitle);
 
         String authors = data.getString(data.getColumnIndex(AlexandriaContract.AuthorEntry.AUTHOR));
-        String[] authorsArr = authors.split(",");
-        ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
-        ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
+
+        if (authors != null) {
+            String[] authorsArr = authors.split(",");
+            ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
+            ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
+        }
 
         if (InternetUtils.isInternetAvailable(getActivity())) {
             String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
